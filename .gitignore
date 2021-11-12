@@ -1,1 +1,4 @@
 .env
+.idea
+./trading_platform/__pycache__
+./trading_logic/__pycache__

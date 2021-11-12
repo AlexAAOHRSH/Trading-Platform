@@ -2,8 +2,15 @@ version: '3.7'
 
 
 services:
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - "6379:6379"
   db:
     image: postgres:13.3
+    ports:
+      - "5432:5432"
     environment:
       - POSTGRES_USER
       - POSTGRES_PASSWORD
@@ -11,12 +18,25 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     env_file: .env
+  celery:
+    build:
+      context: .
+    command: >
+          sh -c "celery -A trading_platform worker -l INFO"
+    env_file: .env
+    volumes:
+      - .:/usr/src/app
+    links:
+      - db
+      - redis
+      - web
   web:
     build:
       context: .
     command: >
-      sh -c "python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
+       /bin/sh -c "./run.sh"
+#      sh -c "python manage.py migrate &&
+#             python manage.py runserver 0.0.0.0:8000"
     ports:
       - "8000:8000"
     env_file: .env

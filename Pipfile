@@ -11,6 +11,9 @@ drf-spectacular = "*"
 psycopg2 = "*"
 django-filter = "*"
 django-environ = "*"
+ipython = "*"
+celery = "*"
+redis = "*"
 
 [dev-packages]
 

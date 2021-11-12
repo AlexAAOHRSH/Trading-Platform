@@ -1,7 +1,8 @@
 from decimal import Decimal
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.contrib.auth.models import User
+from trading_logic.order_type import OrderType
+from django.contrib.auth import get_user_model
 
 
 # class StockBase(models.Model):
@@ -28,7 +29,7 @@ class Currency(models.Model):
 
 class UserWallet(models.Model):
     """User Wallet"""
-    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(get_user_model(), blank=True, null=True, on_delete=models.SET_NULL)
     currency = models.ManyToManyField(Currency)
     money = models.DecimalField('Money', decimal_places=3, max_digits=100,
                                 validators=[MinValueValidator(Decimal('0.000'))])
@@ -50,12 +51,12 @@ class Item(models.Model):
     details = models.TextField("Details", blank=True, null=True, max_length=512)
 
     def __str__(self):
-        return self.code
+        return f"{self.code} {self.id}"
 
 
 class WatchList(models.Model):
-    """"""
-    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
+    """List of favorite stocks"""
+    user = models.ForeignKey(get_user_model(), blank=True, null=True, on_delete=models.SET_NULL)
     items = models.ManyToManyField(Item)
 
     def __str__(self):
@@ -73,15 +74,12 @@ class Price(models.Model):
 
 class Offer(models.Model):
     """Request to buy or sell specific stocks"""
-    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
-    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(get_user_model(), blank=True, null=True, on_delete=models.SET_NULL)
+    item = models.ForeignKey(Item, related_name='item', blank=True, null=True, on_delete=models.SET_NULL)
     entry_quantity = models.PositiveIntegerField("Requested quantity")
     quantity = models.PositiveIntegerField("Current quantity")
-    ORDER_TYPE = (
-        (1, 'Sell'),
-        (2, 'Buy')
-    )
-    order_type = models.PositiveSmallIntegerField(choices=ORDER_TYPE)
+    __metaclass__ = OrderType
+    order_type = models.PositiveSmallIntegerField(choices=OrderType.choices)
     price = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True)
     is_active = models.BooleanField(default=True)
 
@@ -90,7 +88,7 @@ class Trade(models.Model):
     """Information about certain transaction"""
     item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
     seller = models.ForeignKey(
-        User,
+        get_user_model(),
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
@@ -98,7 +96,7 @@ class Trade(models.Model):
         related_query_name='seller_trade'
     )
     buyer = models.ForeignKey(
-        User,
+        get_user_model(),
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
@@ -107,7 +105,6 @@ class Trade(models.Model):
     )
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=7, decimal_places=2)
-    description = models.TextField(blank=True, null=True)
     buyer_offer = models.ForeignKey(
         Offer,
         blank=True,
@@ -128,13 +125,14 @@ class Trade(models.Model):
 
 class Inventory(models.Model):
     """The number of stocks a particular user has"""
-    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(get_user_model(), blank=True, null=True, on_delete=models.SET_NULL)
     item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
     quantity = models.PositiveIntegerField("Stocks quantity", default=0)
 
     class Meta:
         verbose_name = "Inventory"
         verbose_name_plural = "Inventory"
+        unique_together = ('user', 'item',)
 
     def __str__(self):
-        return f'{self.user} inventory'
+        return f'{self.user} inventory {self.item}'

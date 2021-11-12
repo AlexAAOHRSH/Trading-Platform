@@ -16,6 +16,8 @@ RUN pip install --upgrade pip pipenv flake8
 COPY Pipfile* ./
 RUN pipenv install --system --ignore-pipfile
 
+COPY run.sh .
+RUN ["chmod", "+x", "run.sh"]
 
 COPY . .
 

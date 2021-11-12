@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Currency, Item, WatchList, Inventory,\
+from trading_logic.models import Currency, Item, WatchList, Inventory,\
     Trade, Offer, Price, UserWallet
 
 admin.site.register(Currency)
@@ -10,5 +10,3 @@ admin.site.register(Trade)
 admin.site.register(Offer)
 admin.site.register(Price)
 admin.site.register(UserWallet)
-
-# Register your models here.
