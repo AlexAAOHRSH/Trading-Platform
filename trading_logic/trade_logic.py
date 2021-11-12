@@ -1,6 +1,7 @@
 from trading_logic.models import Trade, Offer, Inventory, UserWallet
 from django.db.models import F
 from django.db import transaction
+from trading_logic.order_type import OrderType
 
 
 def create_trade(buy_offer, sell_offer):
@@ -37,10 +38,10 @@ def create_trade(buy_offer, sell_offer):
 
 def run_trading(offer):
     first_offer = offer
-    if first_offer.order_type == 1:
-        order_type = 2
+    if first_offer.order_type == OrderType.SELL:
+        order_type = OrderType.BUY
     else:
-        order_type = 1
+        order_type = OrderType.SELL
 
     offers = Offer.objects.filter(
         item=first_offer.item, order_type=order_type
@@ -52,11 +53,11 @@ def run_trading(offer):
 
             if first_offer.order_type != offer.order_type:
 
-                if offer.order_type == 1:
+                if offer.order_type == OrderType.SELL:
 
                     create_trade(first_offer, offer)
 
-                elif offer.order_type == 2:
+                elif offer.order_type == OrderType.BUY:
 
                     create_trade(offer, first_offer)
 

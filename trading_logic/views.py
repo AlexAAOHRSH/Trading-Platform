@@ -34,26 +34,6 @@ class OfferViewSet(viewsets.mixins.CreateModelMixin,
     queryset = Offer.objects.all()
     trade_task.delay()
 
-    def destroy(self, request, *args, **kwargs):
-        offer_id = kwargs['pk']
-        user = request.user
-
-        if Offer.objects.filter(id=offer_id).get().order_type == 1:
-            user_inventory = Inventory.objects.filter(user=user,
-                                                      item=Offer.objects.filter(id=offer_id).get().item).get()
-            user_inventory.quantity = F('quantity') + int(Offer.objects.filter(id=offer_id).get().quantity)
-            user_inventory.save()
-            Offer.objects.filter(id=offer_id).delete()
-
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
-            user_wallet = UserWallet.objects.filter(user=user).get()
-            user_wallet.money = F('money') + Offer.objects.filter(id=offer_id).get().price
-            user_wallet.save()
-            Offer.objects.filter(id=offer_id).delete()
-
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 class InventoryViewSet(viewsets.mixins.RetrieveModelMixin, viewsets.GenericViewSet):
 

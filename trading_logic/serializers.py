@@ -4,6 +4,7 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
+from trading_logic.order_type import OrderType
 from django.db.models import F
 
 
@@ -90,7 +91,7 @@ class OfferSerializer(serializers.HyperlinkedModelSerializer):
         with transaction.atomic():
             if int(getattr(Inventory.objects.filter(user=user, item_id=Item.objects.filter(
                     id=validated_data['item_id']).get()).get(),
-                    'quantity')) >= validated_data['entry_quantity'] and validated_data['order_type'] == 1:
+                    'quantity')) >= validated_data['entry_quantity'] and validated_data['order_type'] == OrderType.SELL:
 
                 offer = Offer.objects.create(user=user, item_id=validated_data['item_id'],
                                              entry_quantity=validated_data['entry_quantity'],
@@ -106,7 +107,7 @@ class OfferSerializer(serializers.HyperlinkedModelSerializer):
 
                 return offer
 
-            elif validated_data['order_type'] == 2:
+            elif validated_data['order_type'] == OrderType.BUY:
                 offer = Offer.objects.create(user=user, item=Item.objects.filter(id=validated_data['item_id']).get(),
                                              entry_quantity=validated_data['entry_quantity'],
                                              quantity=validated_data['entry_quantity'],
@@ -134,7 +135,7 @@ class OfferSerializer(serializers.HyperlinkedModelSerializer):
 
             delta_quantity = int(instance.entry_quantity) - int(validated_data['entry_quantity'])
 
-            if instance.order_type == 1:
+            if instance.order_type == OrderType.SELL:
 
                 if (int(Inventory.objects.filter(user=user, item=instance.item).get().quantity) + delta_quantity) >= 0:
 
@@ -154,7 +155,7 @@ class OfferSerializer(serializers.HyperlinkedModelSerializer):
                 else:
                     return Response(status=status.HTTP_400_BAD_REQUEST)
 
-            elif instance.order_type == 2:
+            elif instance.order_type == OrderType.BUY:
                 if (float(UserWallet.objects.filter(user=user).get().money) + delta_quantity * float(
                         instance.item.price)) >= 0:
 
@@ -175,6 +176,29 @@ class OfferSerializer(serializers.HyperlinkedModelSerializer):
                     return Response(status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    def perform_destroy(self, instance):
+        user = self.context['request'].user
+        offer_id = instance.id
+
+        if instance.order_type == OrderType.SELL:
+            user_inventory = Inventory.objects.filter(user=user,
+                                                      item=Offer.objects.filter(id=offer_id).get().item).get()
+            user_inventory.quantity = F('quantity') + int(Offer.objects.filter(id=offer_id).get().quantity)
+            user_inventory.save()
+            instance.delete()
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            user_wallet = UserWallet.objects.filter(user=user).get()
+            user_wallet.money = F('money') + Offer.objects.filter(id=offer_id).get().price
+            user_wallet.save()
+            instance.delete()
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
 
 
 class InventorySerializer(serializers.HyperlinkedModelSerializer):
