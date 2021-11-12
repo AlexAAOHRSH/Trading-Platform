@@ -5,13 +5,7 @@ from trading_logic.order_type import OrderType
 from django.contrib.auth import get_user_model
 
 
-# class StockBase(models.Model):
-#     """Base"""
-#     code = models.CharField("Code", max_length=8, unique=True)
-#     name = models.CharField("Name", max_length=128, unique=True)
-#
-#     class Meta:
-#         abstract = True
+User = get_user_model()
 
 
 class Currency(models.Model):
@@ -29,7 +23,8 @@ class Currency(models.Model):
 
 class UserWallet(models.Model):
     """User Wallet"""
-    user = models.ForeignKey(get_user_model(), blank=True, null=True, on_delete=models.SET_NULL)
+
+    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
     currency = models.ManyToManyField(Currency)
     money = models.DecimalField('Money', decimal_places=3, max_digits=100,
                                 validators=[MinValueValidator(Decimal('0.000'))])
@@ -56,7 +51,7 @@ class Item(models.Model):
 
 class WatchList(models.Model):
     """List of favorite stocks"""
-    user = models.ForeignKey(get_user_model(), blank=True, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
     items = models.ManyToManyField(Item)
 
     def __str__(self):
@@ -74,7 +69,7 @@ class Price(models.Model):
 
 class Offer(models.Model):
     """Request to buy or sell specific stocks"""
-    user = models.ForeignKey(get_user_model(), blank=True, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
     item = models.ForeignKey(Item, related_name='item', blank=True, null=True, on_delete=models.SET_NULL)
     entry_quantity = models.PositiveIntegerField("Requested quantity")
     quantity = models.PositiveIntegerField("Current quantity")
@@ -88,7 +83,7 @@ class Trade(models.Model):
     """Information about certain transaction"""
     item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
     seller = models.ForeignKey(
-        get_user_model(),
+        User,
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
@@ -96,7 +91,7 @@ class Trade(models.Model):
         related_query_name='seller_trade'
     )
     buyer = models.ForeignKey(
-        get_user_model(),
+        User,
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
@@ -125,7 +120,7 @@ class Trade(models.Model):
 
 class Inventory(models.Model):
     """The number of stocks a particular user has"""
-    user = models.ForeignKey(get_user_model(), blank=True, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
     item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
     quantity = models.PositiveIntegerField("Stocks quantity", default=0)
 

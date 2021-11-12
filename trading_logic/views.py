@@ -9,11 +9,18 @@ from trading_logic.serializers import WatchListSerializer,\
     ItemSerializer, UserCreateSerializer, UserWalletSerializer
 
 
-class WatchListViewSet(viewsets.ModelViewSet):
+class WatchListViewSet(viewsets.mixins.RetrieveModelMixin, viewsets.mixins.CreateModelMixin,
+                       viewsets.mixins.DestroyModelMixin, viewsets.GenericViewSet):
 
     serializer_class = WatchListSerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = WatchList.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        user = request.user
+        instance = WatchList.objects.filter(user=user).get()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 class OfferViewSet(viewsets.mixins.CreateModelMixin,
@@ -48,11 +55,17 @@ class OfferViewSet(viewsets.mixins.CreateModelMixin,
             return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class InventoryViewSet(viewsets.mixins.ListModelMixin, viewsets.GenericViewSet):
+class InventoryViewSet(viewsets.mixins.RetrieveModelMixin, viewsets.GenericViewSet):
 
     queryset = Inventory.objects.all()
     serializer_class = InventorySerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        user = request.user
+        instance = Inventory.objects.filter(user=user).get()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 class ItemViewSet(viewsets.mixins.ListModelMixin, viewsets.mixins.RetrieveModelMixin, viewsets.GenericViewSet):
@@ -62,15 +75,10 @@ class ItemViewSet(viewsets.mixins.ListModelMixin, viewsets.mixins.RetrieveModelM
     # permission_classes = [permissions.IsAuthenticated]
 
 
-class UserCreateViewSet(viewsets.mixins.CreateModelMixin, viewsets.GenericViewSet):
+class UserCreateViewSet(viewsets.mixins.CreateModelMixin, viewsets.mixins.RetrieveModelMixin, viewsets.GenericViewSet):
 
     queryset = get_user_model().objects.all()
     serializer_class = UserCreateSerializer
-
-    def retrieve(self):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class UserWalletViewSet(viewsets.mixins.RetrieveModelMixin, viewsets.GenericViewSet):
